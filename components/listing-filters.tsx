@@ -7,14 +7,20 @@ import {
 } from "react";
 
 import { ListingCard } from "@/components/listing-card";
-import { mockListings } from "@/lib/mock-listings";
+import type { Listing } from "@/types/listing";
+
+type ListingFiltersProps = {
+  listings: Listing[];
+};
 
 type SortOption =
   | "recommended"
   | "price-low"
   | "price-high";
 
-export function ListingFilters() {
+export function ListingFilters({
+  listings,
+}: ListingFiltersProps) {
   // Values currently displayed inside the form
   const [locationInput, setLocationInput] = useState("");
   const [maxRentInput, setMaxRentInput] = useState("");
@@ -52,7 +58,7 @@ export function ListingFilters() {
       .trim()
       .toLowerCase();
 
-    const results = mockListings.filter((listing) => {
+    const results = listings.filter((listing) => {
       const searchableLocation = `
         ${listing.title}
         ${listing.city}
@@ -93,7 +99,13 @@ export function ListingFilters() {
     }
 
     return results;
-  }, [location, maxRent, roomType, sortBy]);
+  }, [
+    listings,
+    location,
+    maxRent,
+    roomType,
+    sortBy,
+]);
 
   return (
     <div>

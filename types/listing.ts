@@ -1,17 +1,20 @@
 export type Listing = {
   id: string;
   title: string;
+  description: string;
   city: string;
   state: string;
-  address: string;
   monthlyRent: number;
   roomType: string;
   furnished: boolean;
   availableFrom: string;
   availableUntil: string;
-  description: string;
-  amenities: string[];
+
+  // Temporary fallback fields until their
+  // database tables/columns are added.
+  address: string;
   commute: string;
   ownerName: string;
+  amenities: string[];
   imageUrl?: string;
 };

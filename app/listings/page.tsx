@@ -1,7 +1,10 @@
 import { ListingFilters } from "@/components/listing-filters";
 import { Navbar } from "@/components/navbar";
+import { getListings } from "@/lib/listings";
 
-export default function ListingsPage() {
+export default async function ListingsPage() {
+  const listings = await getListings();
+
   return (
     <main className="min-h-screen bg-slate-50">
       <Navbar />
@@ -17,14 +20,14 @@ export default function ListingsPage() {
           </h1>
 
           <p className="mt-3 max-w-2xl text-slate-500">
-            Find housing that matches your internship dates, budget, and
-            preferred location.
+            Find housing that matches your internship
+            dates, budget, and preferred location.
           </p>
         </div>
       </section>
 
       <section className="mx-auto max-w-7xl px-6 py-12">
-        <ListingFilters />
+        <ListingFilters listings={listings} />
       </section>
     </main>
   );

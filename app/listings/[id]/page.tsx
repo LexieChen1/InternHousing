@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Navbar } from "@/components/navbar";
-import { mockListings } from "@/lib/mock-listings";
+import { getListingById } from "@/lib/listings";
 
 type ListingDetailsPageProps = {
   params: Promise<{
@@ -10,18 +10,12 @@ type ListingDetailsPageProps = {
   }>;
 };
 
-export function generateStaticParams() {
-  return mockListings.map((listing) => ({
-    id: listing.id,
-  }));
-}
-
 export default async function ListingDetailsPage({
   params,
 }: ListingDetailsPageProps) {
   const { id } = await params;
 
-  const listing = mockListings.find((item) => item.id === id);
+  const listing = await getListingById(id);
 
   if (!listing) {
     notFound();
