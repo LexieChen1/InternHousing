@@ -10,10 +10,7 @@
 !.yarn/releases
 !.yarn/versions
 
-<<<<<<< HEAD
-=======
 
->>>>>>> setup
 # testing
 /coverage
 
