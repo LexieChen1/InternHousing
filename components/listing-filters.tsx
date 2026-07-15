@@ -63,6 +63,7 @@ export function ListingFilters({
         ${listing.title}
         ${listing.city}
         ${listing.state}
+        ${listing.nearbyCampus ?? ""}
       `.toLowerCase();
 
       const matchesLocation =

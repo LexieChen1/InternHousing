@@ -7,6 +7,7 @@ type ListingRow = {
   description: string;
   city: string;
   state: string;
+  nearby_campus: string | null;
   monthly_rent: number;
   room_type: string;
   furnished: boolean;
@@ -22,20 +23,18 @@ function mapListingRow(row: ListingRow): Listing {
     description: row.description,
     city: row.city,
     state: row.state,
+    nearbyCampus: row.nearby_campus,
     monthlyRent: row.monthly_rent,
     roomType: row.room_type,
     furnished: row.furnished,
     availableFrom: row.available_from,
     availableUntil: row.available_until,
-
-    // Temporary values until we add these features.
     address: `${row.city}, ${row.state}`,
     commute: "Commute information not provided",
     ownerName: "Host",
     amenities: [],
   };
 }
-
 export async function getListings(): Promise<Listing[]> {
   const supabase = await createClient();
 

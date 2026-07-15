@@ -4,6 +4,7 @@ export type Listing = {
   description: string;
   city: string;
   state: string;
+  nearbyCampus: string | null;
   monthlyRent: number;
   roomType: string;
   furnished: boolean;

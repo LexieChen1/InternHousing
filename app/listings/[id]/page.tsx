@@ -27,7 +27,7 @@ export default async function ListingDetailsPage({
 
       <div className="mx-auto max-w-7xl px-6 py-8">
         <Link
-          href="/"
+          href="/listings"
           className="text-sm font-medium text-slate-500 hover:text-slate-950"
         >
           ← Back to listings
@@ -57,8 +57,14 @@ export default async function ListingDetailsPage({
               </h1>
 
               <p className="mt-3 text-slate-500">
-                {listing.address}, {listing.city}, {listing.state}
+                {listing.city}, {listing.state}
               </p>
+
+              {listing.nearbyCampus && (
+                <p className="mt-2 text-sm font-medium text-blue-600">
+                  Near {listing.nearbyCampus}
+                </p>
+              )}
             </div>
 
             <button
@@ -77,19 +83,27 @@ export default async function ListingDetailsPage({
             </div>
 
             <div className="flex min-h-40 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-200 to-slate-100">
-              <span className="text-sm text-slate-400">Image 2</span>
+              <span className="text-sm text-slate-400">
+                Image 2
+              </span>
             </div>
 
             <div className="flex min-h-40 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-slate-200">
-              <span className="text-sm text-slate-400">Image 3</span>
+              <span className="text-sm text-slate-400">
+                Image 3
+              </span>
             </div>
 
             <div className="flex min-h-40 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-100 to-blue-100">
-              <span className="text-sm text-slate-400">Image 4</span>
+              <span className="text-sm text-slate-400">
+                Image 4
+              </span>
             </div>
 
             <div className="flex min-h-40 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-200 to-white">
-              <span className="text-sm text-slate-400">Image 5</span>
+              <span className="text-sm text-slate-400">
+                Image 5
+              </span>
             </div>
           </div>
         </div>
@@ -111,14 +125,15 @@ export default async function ListingDetailsPage({
                 Stay details
               </h2>
 
-              <div className="mt-5 grid gap-4 sm:grid-cols-3">
+              <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="rounded-xl bg-white p-4">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                     Available
                   </p>
 
                   <p className="mt-2 text-sm font-medium text-slate-950">
-                    {listing.availableFrom} – {listing.availableUntil}
+                    {listing.availableFrom} –{" "}
+                    {listing.availableUntil}
                   </p>
                 </div>
 
@@ -141,6 +156,18 @@ export default async function ListingDetailsPage({
                     {listing.commute}
                   </p>
                 </div>
+
+                {listing.nearbyCampus && (
+                  <div className="rounded-xl bg-white p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      Nearby campus
+                    </p>
+
+                    <p className="mt-2 text-sm font-medium text-slate-950">
+                      {listing.nearbyCampus}
+                    </p>
+                  </div>
+                )}
               </div>
             </section>
 
@@ -149,20 +176,26 @@ export default async function ListingDetailsPage({
                 Amenities
               </h2>
 
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                {listing.amenities.map((amenity) => (
-                  <div
-                    key={amenity}
-                    className="flex items-center gap-3 rounded-xl bg-white px-4 py-3 text-sm text-slate-700"
-                  >
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-xs text-blue-700">
-                      ✓
-                    </span>
+              {listing.amenities.length > 0 ? (
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  {listing.amenities.map((amenity) => (
+                    <div
+                      key={amenity}
+                      className="flex items-center gap-3 rounded-xl bg-white px-4 py-3 text-sm text-slate-700"
+                    >
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-xs text-blue-700">
+                        ✓
+                      </span>
 
-                    {amenity}
-                  </div>
-                ))}
-              </div>
+                      {amenity}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-4 text-sm text-slate-500">
+                  No amenities have been added yet.
+                </p>
+              )}
             </section>
           </div>
 
@@ -171,6 +204,7 @@ export default async function ListingDetailsPage({
               <div className="flex items-end justify-between">
                 <p className="text-2xl font-bold text-slate-950">
                   ${listing.monthlyRent.toLocaleString()}
+
                   <span className="text-sm font-normal text-slate-500">
                     {" "}
                     / month
@@ -218,7 +252,7 @@ export default async function ListingDetailsPage({
 
                 <div className="mt-3 flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 font-semibold text-slate-600">
-                    {listing.ownerName.charAt(0)}
+                    {listing.ownerName.charAt(0).toUpperCase()}
                   </div>
 
                   <div>
