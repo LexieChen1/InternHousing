@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import type { Listing } from "@/types/listing";
 
 type ListingCardProps = {
@@ -6,7 +8,12 @@ type ListingCardProps = {
 
 export function ListingCard({ listing }: ListingCardProps) {
   return (
-    <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-1 hover:shadow-lg">
+    <Link
+      href={`/listings/${listing.id}`}
+      aria-label={`View ${listing.title}`}
+      className="block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+    >
+      <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-1 hover:shadow-lg">
       <div className="flex aspect-[4/3] items-center justify-center bg-gradient-to-br from-blue-100 to-slate-200">
         <span className="text-sm font-medium text-slate-500">
           Listing image
@@ -47,6 +54,7 @@ export function ListingCard({ listing }: ListingCardProps) {
           {listing.availableFrom} – {listing.availableUntil}
         </p>
       </div>
-    </article>
+      </article>
+    </Link>
   );
 }

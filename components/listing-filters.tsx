@@ -11,6 +11,9 @@ import type { Listing } from "@/types/listing";
 
 type ListingFiltersProps = {
   listings: Listing[];
+  initialLocation?: string;
+  initialMoveIn?: string;
+  initialMoveOut?: string;
 };
 
 type SortOption =
@@ -20,14 +23,19 @@ type SortOption =
 
 export function ListingFilters({
   listings,
+  initialLocation = "",
+  initialMoveIn = "",
+  initialMoveOut = "",
 }: ListingFiltersProps) {
   // Values currently displayed inside the form
-  const [locationInput, setLocationInput] = useState("");
+  const [locationInput, setLocationInput] = useState(initialLocation);
   const [maxRentInput, setMaxRentInput] = useState("");
   const [roomTypeInput, setRoomTypeInput] = useState("");
 
   // Values applied after the user clicks Search
-  const [location, setLocation] = useState("");
+  const [location, setLocation] = useState(initialLocation);
+  const [moveIn, setMoveIn] = useState(initialMoveIn);
+  const [moveOut, setMoveOut] = useState(initialMoveOut);
   const [maxRent, setMaxRent] = useState("");
   const [roomType, setRoomType] = useState("");
 
@@ -48,6 +56,8 @@ export function ListingFilters({
     setRoomTypeInput("");
 
     setLocation("");
+    setMoveIn("");
+    setMoveOut("");
     setMaxRent("");
     setRoomType("");
     setSortBy("recommended");
@@ -78,10 +88,20 @@ export function ListingFilters({
         roomType === "" ||
         listing.roomType === roomType;
 
+      const matchesMoveIn =
+        moveIn === "" ||
+        listing.availableFrom <= moveIn;
+
+      const matchesMoveOut =
+        moveOut === "" ||
+        listing.availableUntil >= moveOut;
+
       return (
         matchesLocation &&
         matchesPrice &&
-        matchesRoomType
+        matchesRoomType &&
+        matchesMoveIn &&
+        matchesMoveOut
       );
     });
 
@@ -104,6 +124,8 @@ export function ListingFilters({
     listings,
     location,
     maxRent,
+    moveIn,
+    moveOut,
     roomType,
     sortBy,
 ]);

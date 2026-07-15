@@ -2,7 +2,22 @@ import { ListingFilters } from "@/components/listing-filters";
 import { Navbar } from "@/components/navbar";
 import { getListings } from "@/lib/listings";
 
-export default async function ListingsPage() {
+type ListingsPageProps = {
+  searchParams: Promise<{
+    location?: string | string[];
+    moveIn?: string | string[];
+    moveOut?: string | string[];
+  }>;
+};
+
+function getSingleValue(value: string | string[] | undefined) {
+  return typeof value === "string" ? value : "";
+}
+
+export default async function ListingsPage({
+  searchParams,
+}: ListingsPageProps) {
+  const query = await searchParams;
   const listings = await getListings();
 
   return (
@@ -27,7 +42,12 @@ export default async function ListingsPage() {
       </section>
 
       <section className="mx-auto max-w-7xl px-6 py-12">
-        <ListingFilters listings={listings} />
+        <ListingFilters
+          listings={listings}
+          initialLocation={getSingleValue(query.location)}
+          initialMoveIn={getSingleValue(query.moveIn)}
+          initialMoveOut={getSingleValue(query.moveOut)}
+        />
       </section>
     </main>
   );

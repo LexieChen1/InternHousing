@@ -1,6 +1,10 @@
 export function SearchBar() {
   return (
-    <form className="grid gap-4 rounded-2xl bg-white p-4 shadow-xl shadow-slate-950/10 md:grid-cols-5">
+    <form
+      action="/listings"
+      method="get"
+      className="grid gap-4 rounded-2xl bg-white p-4 shadow-xl shadow-slate-950/10 md:grid-cols-5"
+    >
       <label className="md:col-span-2">
         <span className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
           Location
@@ -8,6 +12,7 @@ export function SearchBar() {
 
         <input
           type="text"
+          name="location"
           placeholder="Company, university, or city"
           className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-500"
         />
@@ -20,6 +25,7 @@ export function SearchBar() {
 
         <input
           type="date"
+          name="moveIn"
           className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-500"
         />
       </label>
@@ -31,6 +37,7 @@ export function SearchBar() {
 
         <input
           type="date"
+          name="moveOut"
           className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-500"
         />
       </label>
