@@ -167,6 +167,8 @@ function fallbackReason(listing: Listing): string {
 const campusAliases: Record<string, string> = {
   caltech: "California Institute of Technology",
   "cal tech": "California Institute of Technology",
+  uva: "University of Virginia",
+  "uva university": "University of Virginia",
 };
 
 function normalizeCampusName(
@@ -389,8 +391,9 @@ export async function searchHousing(
     const fallback = await retrieveInMemory(resolved);
     matches = fallback.matches;
     mode = fallback.mode;
-    warning =
-      "Semantic database search was unavailable, so a safe fallback was used.";
+    warning = hasOpenAIKey()
+      ? "Semantic search or the vector index was unavailable, so keyword ranking was used."
+      : "Semantic search is not configured. Add an OpenAI API key and index the listings to enable it; keyword ranking was used.";
   }
 
   if (!matches.length) {
