@@ -3,12 +3,15 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 
 export async function Navbar() {
-  const supabase = await createClient();
+  let isLoggedIn = false;
 
-  const { data } = await supabase.auth.getClaims();
+  if (process.env.SUPABASE_OFFLINE !== "true") {
+    const supabase = await createClient();
+    const { data } = await supabase.auth.getClaims();
 
-  const isLoggedIn =
-    typeof data?.claims?.sub === "string";
+    isLoggedIn =
+      typeof data?.claims?.sub === "string";
+  }
 
   return (
     <header className="border-b border-slate-200 bg-white">

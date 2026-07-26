@@ -7,6 +7,7 @@ type ListingsPageProps = {
     location?: string | string[];
     moveIn?: string | string[];
     moveOut?: string | string[];
+    query?: string | string[];
   }>;
 };
 
@@ -26,7 +27,7 @@ export default async function ListingsPage({
 
       <section className="border-b border-slate-200 bg-white">
         <div className="mx-auto max-w-7xl px-6 py-12">
-          <p className="text-sm font-semibold text-blue-600">
+          <p className="text-sm font-semibold text-emerald-700">
             Intern short-term housing
           </p>
 
@@ -47,6 +48,9 @@ export default async function ListingsPage({
           initialLocation={getSingleValue(query.location)}
           initialMoveIn={getSingleValue(query.moveIn)}
           initialMoveOut={getSingleValue(query.moveOut)}
+          initialNaturalLanguageQuery={getSingleValue(
+            query.query,
+          )}
         />
       </section>
     </main>

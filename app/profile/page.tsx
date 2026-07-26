@@ -114,7 +114,7 @@ export default async function ProfilePage({
                 required
                 maxLength={100}
                 defaultValue={profile?.full_name ?? ""}
-                placeholder="Alex Chen"
+                placeholder="Lexie Chens"
                 className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               />
             </label>
@@ -132,7 +132,7 @@ export default async function ProfilePage({
                   defaultValue={
                     profile?.university ?? ""
                   }
-                  placeholder="University at Albany"
+                  placeholder="University of Virginia"
                   className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
               </label>

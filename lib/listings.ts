@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { mockListings } from "@/lib/mock-listings";
 import type { Listing } from "@/types/listing";
 
 type ListingRow = {
@@ -36,6 +37,10 @@ function mapListingRow(row: ListingRow): Listing {
   };
 }
 export async function getListings(): Promise<Listing[]> {
+  if (process.env.SUPABASE_OFFLINE === "true") {
+    return mockListings;
+  }
+
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -60,6 +65,13 @@ export async function getListings(): Promise<Listing[]> {
     });
 
   if (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn(
+        "Supabase is unavailable; using mock listings.",
+      );
+      return mockListings;
+    }
+
     throw new Error(
       `Failed to load listings: ${error.message}`,
     );
@@ -71,6 +83,13 @@ export async function getListings(): Promise<Listing[]> {
 export async function getListingById(
   id: string,
 ): Promise<Listing | null> {
+  if (process.env.SUPABASE_OFFLINE === "true") {
+    return (
+      mockListings.find((listing) => listing.id === id) ??
+      null
+    );
+  }
+
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -94,6 +113,16 @@ export async function getListingById(
     .maybeSingle();
 
   if (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn(
+        "Supabase is unavailable; using a mock listing.",
+      );
+      return (
+        mockListings.find((listing) => listing.id === id) ??
+        null
+      );
+    }
+
     throw new Error(
       `Failed to load listing: ${error.message}`,
     );

@@ -3,8 +3,23 @@ export function SearchBar() {
     <form
       action="/listings"
       method="get"
-      className="grid gap-4 rounded-2xl bg-white p-4 shadow-xl shadow-slate-950/10 md:grid-cols-5"
+      className="grid gap-4 rounded-2xl border border-stone-200 bg-white p-4 shadow-lg shadow-stone-900/5 md:grid-cols-5"
     >
+      <label className="md:col-span-5">
+        <span className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Describe what you&apos;re looking for
+        </span>
+
+        <input
+          type="text"
+          name="query"
+          minLength={3}
+          maxLength={500}
+          placeholder="Quiet furnished room near Columbia under $1,800"
+          className="w-full rounded-lg border border-stone-200 px-4 py-3 text-sm outline-none focus:border-emerald-600"
+        />
+      </label>
+
       <label className="md:col-span-2">
         <span className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
           Location
@@ -44,7 +59,7 @@ export function SearchBar() {
 
       <button
         type="submit"
-        className="self-end rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700"
+        className="self-end rounded-lg bg-emerald-700 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-800"
       >
         Search
       </button>

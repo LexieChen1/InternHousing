@@ -13,9 +13,9 @@ export default async function HomePage() {
     <main className="min-h-screen bg-slate-50">
       <Navbar />
 
-      <section className="bg-slate-950 px-6 py-20 text-white">
+      <section className="border-b border-stone-200 bg-stone-100 px-6 py-20 text-stone-950">
         <div className="mx-auto max-w-7xl">
-          <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-blue-300">
+          <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">
             Housing built for internships
           </p>
 
@@ -23,7 +23,7 @@ export default async function HomePage() {
             Find a place for your internship, NOT a year-long lease.
           </h1>
 
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
+          <p className="mt-6 max-w-2xl text-lg leading-8 text-stone-600">
             Search short-term housing by internship dates, budget, location,
             and the preferences that matter to you.
           </p>
@@ -37,7 +37,7 @@ export default async function HomePage() {
       <section className="mx-auto max-w-7xl px-6 py-16">
         <div className="mb-8 flex items-end justify-between">
           <div>
-            <p className="text-sm font-semibold text-blue-600">
+            <p className="text-sm font-semibold text-emerald-700">
               Available this summer
             </p>
 
