@@ -9,6 +9,7 @@ import {
 } from "react";
 
 import { ListingCard } from "@/components/listing-card";
+import { matchesListingLocation } from "@/lib/location";
 import type { RagSearchResponse } from "@/lib/rag/types";
 import type { Listing } from "@/types/listing";
 
@@ -81,14 +82,14 @@ export function ListingFilters({
           roomType: roomTypeInput || undefined,
           moveIn: moveIn || undefined,
           moveOut: moveOut || undefined,
-          limit: 6,
+          location: locationInput || undefined,
         }),
       });
       const result = await response.json();
 
       if (!response.ok) {
         throw new Error(
-          result.error ?? "AI search failed.",
+          result.error ?? "Search failed.",
         );
       }
 
@@ -97,7 +98,7 @@ export function ListingFilters({
       setRagError(
         error instanceof Error
           ? error.message
-          : "AI search failed.",
+          : "Search failed.",
       );
     } finally {
       setIsRagSearching(false);
@@ -142,21 +143,8 @@ export function ListingFilters({
   }
 
   const filteredListings = useMemo(() => {
-    const normalizedLocation = location
-      .trim()
-      .toLowerCase();
-
     const results = listings.filter((listing) => {
-      const searchableLocation = `
-        ${listing.title}
-        ${listing.city}
-        ${listing.state}
-        ${listing.nearbyCampus ?? ""}
-      `.toLowerCase();
-
-      const matchesLocation =
-        normalizedLocation === "" ||
-        searchableLocation.includes(normalizedLocation);
+      const matchesLocation = matchesListingLocation(listing, location);
 
       const matchesPrice =
         maxRent === "" ||
@@ -419,7 +407,7 @@ export function ListingFilters({
       ) : (
         <div className="mt-8 rounded-2xl border border-slate-200 bg-white px-6 py-16 text-center">
           <h3 className="text-lg font-semibold text-slate-950">
-            No listings found
+            No listings meet your requirements
           </h3>
 
           <p className="mt-2 text-sm text-slate-500">

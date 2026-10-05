@@ -17,7 +17,7 @@ export const ragSearchSchema = z
     roomType: z.enum(roomTypes).optional(),
     moveIn: z.iso.date().optional(),
     moveOut: z.iso.date().optional(),
-    limit: z.number().int().min(1).max(10).default(5),
+    location: z.string().trim().max(200).optional(),
   })
   .refine(
     ({ minRent, maxRent }) =>
@@ -55,19 +55,20 @@ export type QueryInterpretation = {
 export type ResolvedRagSearch = RagSearchInput & {
   furnished?: boolean;
   campus?: string;
-  semanticQuery: string;
+  rankingQuery: string;
+  preferences: string[];
 };
 
 export type RagMatch = {
   listing: Listing;
-  semanticScore: number | null;
+  keywordScore: number;
   reason: string;
 };
 
 export type RagSearchResponse = {
   answer: string;
   matches: RagMatch[];
-  mode: "semantic" | "keyword";
+  mode: "keyword";
   interpretedQuery: QueryInterpretation;
   warning?: string;
 };

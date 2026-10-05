@@ -43,8 +43,12 @@ export async function getListings(): Promise<Listing[]> {
 
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("listings")
+  const rows: ListingRow[] = [];
+  const pageSize = 500;
+
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error } = await supabase
+      .from("listings")
     .select(`
       id,
       title,
@@ -59,25 +63,24 @@ export async function getListings(): Promise<Listing[]> {
       available_until,
       status
     `)
-    .eq("status", "active")
-    .order("created_at", {
-      ascending: false,
-    });
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .range(offset, offset + pageSize - 1);
 
-  if (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.warn(
-        "Supabase is unavailable; using mock listings.",
-      );
-      return mockListings;
+    if (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.warn("Supabase is unavailable; using mock listings.");
+        return mockListings;
+      }
+      throw new Error(`Failed to load listings: ${error.message}`);
     }
 
-    throw new Error(
-      `Failed to load listings: ${error.message}`,
-    );
+    rows.push(...(data as ListingRow[]));
+    if (data.length < pageSize) break;
   }
 
-  return (data as ListingRow[]).map(mapListingRow);
+  return rows.map(mapListingRow);
 }
 
 export async function getListingById(

@@ -1,13 +1,7 @@
 import "server-only";
 
 import { getListings } from "@/lib/listings";
-import {
-  createEmbedding,
-  createListingEmbeddings,
-  generateGroundedAnswer,
-  hasOpenAIKey,
-  interpretHousingQuery,
-} from "@/lib/rag/openai";
+import { matchesListingLocation, stateCode } from "@/lib/location";
 import type {
   QueryInterpretation,
   RagMatch,
@@ -15,47 +9,7 @@ import type {
   RagSearchResponse,
   ResolvedRagSearch,
 } from "@/lib/rag/types";
-import { createClient } from "@/lib/supabase/server";
 import type { Listing } from "@/types/listing";
-
-type MatchRow = {
-  id: string;
-  title: string;
-  description: string;
-  city: string;
-  state: string;
-  nearby_campus: string | null;
-  monthly_rent: number;
-  room_type: string;
-  furnished: boolean;
-  available_from: string;
-  available_until: string;
-  similarity: number;
-};
-
-function mapMatchRow(row: MatchRow): RagMatch {
-  return {
-    listing: {
-      id: row.id,
-      title: row.title,
-      description: row.description,
-      city: row.city,
-      state: row.state,
-      nearbyCampus: row.nearby_campus,
-      monthlyRent: row.monthly_rent,
-      roomType: row.room_type,
-      furnished: row.furnished,
-      availableFrom: row.available_from,
-      availableUntil: row.available_until,
-      address: `${row.city}, ${row.state}`,
-      commute: "Commute information not provided",
-      ownerName: "Host",
-      amenities: [],
-    },
-    semanticScore: Number(row.similarity),
-    reason: "",
-  };
-}
 
 function isEligible(
   listing: Listing,
@@ -83,6 +37,7 @@ function isEligible(
   };
 
   return (
+    (!input.location || matchesListingLocation(listing, input.location)) &&
     (!input.minRent ||
       listing.monthlyRent >= input.minRent) &&
     (!input.maxRent ||
@@ -136,24 +91,20 @@ function tokenScore(query: string, listing: Listing): number {
   return overlap / queryTokens.size;
 }
 
-function cosineSimilarity(
-  first: number[],
-  second: number[],
-): number {
-  let dot = 0;
-  let firstMagnitude = 0;
-  let secondMagnitude = 0;
+const preferencePatterns: Record<string, RegExp> = {
+  quiet: /\b(quiet|peaceful|tranquil)\b/i,
+  "good for studying": /\b(study|studying|study-friendly|quiet|peaceful)\b/i,
+  "close to transit": /\b(transit|subway|metro|bus|train)\b/i,
+  "near transit": /\b(transit|subway|metro|bus|train)\b/i,
+  "good for an intern": /\b(intern|interns|internship|internships)\b/i,
+};
 
-  for (let index = 0; index < first.length; index += 1) {
-    dot += first[index] * second[index];
-    firstMagnitude += first[index] ** 2;
-    secondMagnitude += second[index] ** 2;
-  }
-
-  return dot / Math.sqrt(firstMagnitude * secondMagnitude);
+function supportedPreferences(listing: Listing, preferences: string[]): string[] {
+  const text = [listing.title, listing.description, listing.amenities.join(" ")].join(" ");
+  return preferences.filter((preference) => preferencePatterns[preference]?.test(text));
 }
 
-function fallbackReason(listing: Listing): string {
+function fallbackReason(listing: Listing, preferences: string[]): string {
   const details = [
     `$${listing.monthlyRent}/month`,
     listing.roomType.toLowerCase(),
@@ -161,7 +112,13 @@ function fallbackReason(listing: Listing): string {
     `${listing.city}, ${listing.state}`,
   ].filter(Boolean);
 
-  return `Matches with ${details.join(", ")}.`;
+  const supported = supportedPreferences(listing, preferences);
+  const unsupported = preferences.filter((preference) => !supported.includes(preference));
+  return [
+    `Meets your required filters: ${details.join(", ")}.`,
+    supported.length ? `Description mentions support for: ${supported.join(", ")}.` : "",
+    unsupported.length ? `Not confirmed in the description: ${unsupported.join(", ")}.` : "",
+  ].filter(Boolean).join(" ");
 }
 
 const campusAliases: Record<string, string> = {
@@ -207,6 +164,8 @@ function interpretWithoutModel(
   if (!roomType && normalized.includes("single room")) {
     roomType = "Private room";
   }
+  if (!roomType && /\bshared\b/.test(normalized)) roomType = "Shared room";
+  if (!roomType && /\bprivate\b/.test(normalized)) roomType = "Private room";
   const softPreferences = [
     "quiet",
     "good for studying",
@@ -234,127 +193,39 @@ function interpretWithoutModel(
     moveIn: null,
     moveOut: null,
     campus: normalizeCampusName(
-      campusMatch?.[1].trim() ?? null,
+      campusMatch && !/^(?:transit|a?\s*bus|subway|metro|train)\b/.test(campusMatch[1].trim())
+        ? campusMatch[1].trim()
+        : null,
     ),
     softPreferences,
   };
 }
 
-async function retrieveFromDatabase(
+async function retrieveListings(
   input: ResolvedRagSearch,
 ): Promise<RagMatch[]> {
-  const queryEmbedding = await createEmbedding(
-    input.semanticQuery,
-  );
-  const supabase = await createClient();
-  const { data, error } = await supabase.rpc(
-    "match_active_listings",
-    {
-      query_embedding: queryEmbedding,
-      match_count: 20,
-      min_rent: input.minRent ?? null,
-      max_rent: input.maxRent ?? null,
-      requested_room_type: input.roomType ?? null,
-      requested_furnished: input.furnished ?? null,
-      requested_campus: input.campus ?? null,
-      requested_move_in: input.moveIn ?? null,
-      requested_move_out: input.moveOut ?? null,
-    },
-  );
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return ((data ?? []) as MatchRow[]).map(mapMatchRow);
-}
-
-async function retrieveInMemory(
-  input: ResolvedRagSearch,
-): Promise<{
-  matches: RagMatch[];
-  mode: "semantic" | "keyword";
-}> {
   const eligible = (await getListings()).filter((listing) =>
     isEligible(listing, input),
   );
 
-  if (!eligible.length) {
-    return { matches: [], mode: "keyword" };
-  }
-
-  if (hasOpenAIKey()) {
-    try {
-      const [queryEmbedding, listingEmbeddings] =
-        await Promise.all([
-          createEmbedding(input.semanticQuery),
-          createListingEmbeddings(eligible),
-        ]);
-
-      const matches = eligible
-        .map((listing, index) => ({
-          listing,
-          semanticScore: cosineSimilarity(
-            queryEmbedding,
-            listingEmbeddings[index],
-          ),
-          reason: "",
-        }))
-        .sort(
-          (first, second) =>
-            (second.semanticScore ?? 0) -
-            (first.semanticScore ?? 0),
-        )
-        .slice(0, 20);
-
-      return { matches, mode: "semantic" };
-    } catch {
-      // A configured key may still be invalid, out of credit, or
-      // temporarily rate-limited. Keyword retrieval must remain usable.
-    }
-  }
-
-  return {
-    matches: eligible
-      .map((listing) => ({
-        listing,
-        semanticScore: tokenScore(
-          input.semanticQuery,
-          listing,
-        ),
-        reason: "",
-      }))
-      .sort(
-        (first, second) =>
-          (second.semanticScore ?? 0) -
-          (first.semanticScore ?? 0),
-      )
-      .slice(0, 20),
-    mode: "keyword",
-  };
+  return eligible
+    .map((listing) => ({
+      listing,
+      keywordScore: input.preferences.length
+        ? supportedPreferences(listing, input.preferences).length / input.preferences.length
+        : tokenScore(input.rankingQuery, listing),
+      reason: fallbackReason(listing, input.preferences),
+    }))
+    .sort((first, second) => second.keywordScore - first.keywordScore);
 }
 
 export async function searchHousing(
   input: RagSearchInput,
 ): Promise<RagSearchResponse> {
-  let warning: string | undefined;
-  let mode: "semantic" | "keyword" = "semantic";
-  let matches: RagMatch[] = [];
-  let interpretedQuery = interpretWithoutModel(input.query);
+  const interpretedQuery = interpretWithoutModel(input.query);
 
-  if (hasOpenAIKey()) {
-    try {
-      interpretedQuery = await interpretHousingQuery(
-        input.query,
-      );
-      interpretedQuery.campus = normalizeCampusName(
-        interpretedQuery.campus,
-      );
-    } catch {
-      warning =
-        "Natural-language constraints could not be extracted; explicit filters were still applied.";
-    }
-  }
+  const stateMatch = input.query.match(/\b(?:in|near)\s+([a-z ]+?)(?=\s+(?:under|below|with|for|from|preferably|above|over|at least|up to)\b|[,.;]|$)/i);
+  const inferredState = stateCode(stateMatch?.[1] ?? input.query);
 
   const resolved: ResolvedRagSearch = {
     ...input,
@@ -375,76 +246,26 @@ export async function searchHousing(
       undefined,
     furnished:
       interpretedQuery.furnished ?? undefined,
-    campus: interpretedQuery.campus ?? undefined,
-    semanticQuery:
+    location: input.location || inferredState,
+    campus: stateCode(interpretedQuery.campus ?? "")
+      ? undefined
+      : interpretedQuery.campus ?? undefined,
+    preferences: interpretedQuery.softPreferences,
+    rankingQuery:
       interpretedQuery.softPreferences.length > 0
         ? interpretedQuery.softPreferences.join(", ")
         : input.query,
   };
 
-  try {
-    matches =
-      process.env.SUPABASE_OFFLINE === "true"
-        ? (await retrieveInMemory(resolved)).matches
-        : await retrieveFromDatabase(resolved);
-  } catch {
-    const fallback = await retrieveInMemory(resolved);
-    matches = fallback.matches;
-    mode = fallback.mode;
-    warning = hasOpenAIKey()
-      ? "Semantic search or the vector index was unavailable, so keyword ranking was used."
-      : "Semantic search is not configured. Add an OpenAI API key and index the listings to enable it; keyword ranking was used.";
-  }
-
-  if (!matches.length) {
-    return {
-      answer:
-        "No active listings matched all of your required filters.",
-      matches: [],
-      mode,
-      interpretedQuery,
-      warning,
-    };
-  }
-
-  matches = matches.map((match) => ({
-    ...match,
-    reason: fallbackReason(match.listing),
-  }));
-  matches = matches.slice(0, input.limit);
-
-  let answer = `${matches.length} listing${
-    matches.length === 1 ? "" : "s"
-  } matched. The strongest match is ${matches[0].listing.title}.`;
-
-  if (hasOpenAIKey()) {
-    try {
-      const generated = await generateGroundedAnswer(
-        input,
-        matches,
-      );
-      answer = generated.answer;
-      matches = matches.map((match) => ({
-        ...match,
-        reason:
-          generated.reasons.get(match.listing.id) ??
-          match.reason,
-      }));
-    } catch {
-      warning =
-        "The grounded answer model was unavailable; ranked listings are still valid.";
-    }
-  } else {
-    mode = "keyword";
-    warning =
-      "OPENAI_API_KEY is not configured, so keyword ranking is shown.";
-  }
+  const matches = await retrieveListings(resolved);
+  const answer = matches.length
+    ? `${matches.length} listing${matches.length === 1 ? "" : "s"} meet your required filters. Preferences affect ranking; see each listing for description support.`
+    : "No active listings matched all of your required filters.";
 
   return {
     answer,
     matches,
-    mode,
+    mode: "keyword",
     interpretedQuery,
-    warning,
   };
 }

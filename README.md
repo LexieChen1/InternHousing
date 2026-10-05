@@ -98,7 +98,6 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | `npm run build` | Create a production build |
 | `npm run start` | Serve the production build |
 | `npm run lint` | Run ESLint |
-| `npm run rag:index` | Generate and store embeddings for active listings |
 
 ## Application Routes
 
@@ -153,103 +152,21 @@ For the proposed architecture and longer-term roadmap, see
 
 ## How Our Search Algorithm Works
 
-InternHousing does not use embeddings for every requirement. A housing query
-usually contains both exact constraints and subjective preferences, and those
-two groups need different retrieval methods.
+Search uses rule-based interpretation and keyword ranking. It requires only
+Supabase configuration; no model API keys or indexing commands are needed.
 
-Consider this request:
+1. Validate the search request.
+2. Recognize supported phrases for minimum/maximum rent, room type, furnished
+   status, and nearby campus. Explicit UI filters take precedence.
+3. Load active listings from Supabase (or mock listings in offline mode).
+4. Filter by the resolved requirements, including explicit availability dates.
+5. Rank eligible listings by keyword overlap and return all matching listings.
+6. Build summaries and explanations directly from listing fields.
 
-> Furnished private room near Columbia under $1,800 from June 1 to August 15,
-> preferably quiet and close to transit.
-
-The query interpreter converts the request into validated structured data
-before any database query runs.
-
-### Structured requirements
-
-These requirements have a definite true-or-false answer and must be enforced
-with PostgreSQL filters:
-
-- Room type: `Private room`
-- Furnished: `true`
-- Maximum monthly rent: `$1,800`
-- Available on or before June 1
-- Available through or after August 15
-- Nearby campus: `Columbia University`
-
-An embedding must not decide whether rent is under a limit or whether a listing
-covers the requested dates. PostgreSQL is the source of truth for those facts.
-Explicit filters selected in the UI take precedence over values inferred from
-the natural-language request.
-
-### Semantic preferences
-
-These requirements depend on meaning and can be ranked by similarity:
-
-- Quiet
-- Good for studying
-- Close to transit
-- Good for an intern
-
-The system embeds these preferences and compares them with the stored listing
-embeddings using cosine similarity. Claims such as “safe neighborhood” are not
-inferred from similarity or generated without concrete supporting listing
-data.
-
-### Hybrid retrieval pipeline
-
-1. Validate the request and interpret it as structured JSON.
-2. Apply availability, rent, furnished, campus, and room-type filters.
-3. Compare semantic similarity only among eligible listings.
-4. Retrieve up to 20 candidates.
-5. Rank the candidates and return the best 5 by default.
-6. Give only those retrieved listings to the answer model.
-7. Generate a concise, grounded explanation.
-8. Validate that every explanation references a retrieved listing ID.
-
-This is called **hybrid retrieval** because it combines exact relational
-filtering with semantic vector search. It is also **retrieval-augmented
-generation (RAG)** because the language model receives retrieved, current
-listing records as context before generating its answer.
-
-The language model does not control the database query, invent listing facts,
-or replace the structured results. If query interpretation, embedding, or
-answer generation fails, the application falls back to validated filters,
-keyword ranking, and deterministic explanations.
-
-## RAG Search Setup
-
-The natural-language search uses a hybrid RAG pipeline:
-
-1. PostgreSQL applies hard filters such as rent, dates, and room type.
-2. `text-embedding-3-small` converts the request and listings into vectors.
-3. pgvector ranks eligible listings by cosine similarity.
-4. the Responses API explains only the retrieved listings.
-5. validated, deterministic results remain available if answer generation fails.
-
-Add these server-only values to `.env.local`:
-
-```dotenv
-OPENAI_API_KEY=your-openai-api-key
-SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
-
-# Optional overrides
-OPENAI_EMBEDDING_MODEL=text-embedding-3-small
-OPENAI_RAG_MODEL=gpt-5.4-nano
-```
-
-Never prefix either secret with `NEXT_PUBLIC_`.
-
-Apply `supabase/migrations/20260726_add_rag_search.sql`, then index
-active listings:
-
-```bash
-npm run rag:index
-```
-
-Run the indexing command again after a listing's searchable fields change.
-For local offline development, the endpoint searches mock listings in memory
-and automatically uses keyword ranking when no OpenAI key is configured.
+Date phrases in free text are not parsed; use the date filters. Keyword search
+matches words rather than meaning and does not use a language model.
+The existing vector-search migration is historical and is not required by the
+current search endpoint.
 
 ## Contributing
 

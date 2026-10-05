@@ -1,3 +1,6 @@
+> Implementation note: The current application uses rule-based filters and keyword ranking.
+> Model-based retrieval and generation below describe a future design, not the current implementation.
+
 # InternHousing — System Design
 
 ## 1. Document Overview
